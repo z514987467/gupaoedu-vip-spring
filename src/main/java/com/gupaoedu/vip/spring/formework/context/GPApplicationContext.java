@@ -6,12 +6,14 @@ import com.gupaoedu.vip.spring.formework.annotation.GPService;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanFactory;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanWrapper;
 import com.gupaoedu.vip.spring.formework.beans.config.GPBeanDefinition;
+import com.gupaoedu.vip.spring.formework.beans.config.GPBeanPostProcessor;
 import com.gupaoedu.vip.spring.formework.beans.support.GPBeanDefinitionReader;
 import com.gupaoedu.vip.spring.formework.beans.support.GPDefaultListableBeanFactory;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,7 +31,7 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
     /**
      * 单例的IOC容器缓存
      */
-    private Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
+    private Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>();
 
     /**
      * 通用的IOC容器
@@ -56,7 +58,7 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         doAutowrited();
     }
 
-    private void doAutowrited()  {
+    private void doAutowrited() {
         for (Map.Entry<String, GPBeanDefinition> beanDefinitionEntry : super.beanDefinitionMap.entrySet()) {
             String beanName = beanDefinitionEntry.getKey();
             if (!beanDefinitionEntry.getValue().isLazyInit()) {
@@ -75,12 +77,23 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         for (GPBeanDefinition beanDefinition : beanDefinitions) {
             super.beanDefinitionMap.put(beanDefinition.getFactoryBeanName(), beanDefinition);
         }
+        //到这里为止，容器初始化完毕
     }
 
+    //依赖注入，从这里开始，通过读取BeanDefinition中的信息
+    //然后，通过反射机制创建一个实例并返回
+    //Spring做法是，不会把最原始的对象放出去，会用一个BeanWrapper来进行一次包装
+    //装饰器模式：
+    //1、保留原来的OOP关系
+    //2、我需要对它进行扩展，增强（为了以后AOP打基础）
     @Override
     public Object getBean(String beanName) throws Exception {
         //1.初始化
         GPBeanWrapper beanWrapper = instantiateBean(beanName, this.beanDefinitionMap.get(beanName));
+
+        GPBeanPostProcessor beanPostProcessor = new GPBeanPostProcessor();
+
+        beanPostProcessor.postProcessBeforeInitialization(beanWrapper, beanName);
 
         //2.拿到beanWrapper之后，把BeanWrapper保存到IOC容器中
         /*if (this.factoryBeanInstanceCache.containsKey(beanName)) {
@@ -91,7 +104,14 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         //3.注入
         populateBean(beanName, new GPBeanDefinition(), beanWrapper);
 
+        beanPostProcessor.postProcessAfterInitialization(beanWrapper, beanName);
+
         return this.factoryBeanInstanceCache.get(beanName).getWrappedInstance();
+    }
+
+    @Override
+    public Object getBean(Class<?> beanClass) throws Exception {
+        return getBean(beanClass.getName());
     }
 
     private GPBeanWrapper instantiateBean(String beanName, GPBeanDefinition gpBeanDefinition) {
@@ -103,13 +123,13 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         try {
             //gpBeanDefinition.getFactoryBeanName()
             //假设默认就是单例
-            if (singletonObjects.containsKey(className)) {
-                instance = this.singletonObjects.get(className);
+            if (factoryBeanObjectCache.containsKey(className)) {
+                instance = this.factoryBeanObjectCache.get(className);
             } else {
                 Class<?> clazz = Class.forName(className);
                 instance = clazz.newInstance();
-                this.singletonObjects.put(className, instance);
-                this.singletonObjects.put(gpBeanDefinition.getFactoryBeanName(), instance);
+                this.factoryBeanObjectCache.put(className, instance);
+                this.factoryBeanObjectCache.put(gpBeanDefinition.getFactoryBeanName(), instance);
             }
 
         } catch (Exception e) {
@@ -133,24 +153,36 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
         //获得所有的fields
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
-            if(!field.isAnnotationPresent(GPAutowired.class)){ continue; }
+            if (!field.isAnnotationPresent(GPAutowired.class)) {
+                continue;
+            }
 
-           GPAutowired autowired = field.getAnnotation(GPAutowired.class);
-           String autowiredBeanName = autowired.value().trim();
-           if("".equals(autowiredBeanName)){
-               autowiredBeanName = field.getType().getName();
-           }
-           field.setAccessible(true);
+            GPAutowired autowired = field.getAnnotation(GPAutowired.class);
+            String autowiredBeanName = autowired.value().trim();
+            if ("".equals(autowiredBeanName)) {
+                autowiredBeanName = field.getType().getName();
+            }
+            field.setAccessible(true);
             try {
-                if(this.factoryBeanInstanceCache.get(autowiredBeanName) == null){
+                if (this.factoryBeanInstanceCache.get(autowiredBeanName) == null) {
                     continue;
                 }
-                field.set(instance,this.factoryBeanInstanceCache.get(autowiredBeanName).getWrappedInstance());
+                field.set(instance, this.factoryBeanInstanceCache.get(autowiredBeanName).getWrappedInstance());
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    public String[] getBeanDefinitionNames() {
+        return this.beanDefinitionMap.keySet().toArray(new String[this.beanDefinitionMap.size()]);
+    }
 
+    public int getBeanDefinitionCount(){
+        return this.beanDefinitionMap.size();
+    }
+
+    public Properties getConfig() {
+        return this.reader.getConfig();
+    }
 }

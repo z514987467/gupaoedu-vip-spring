@@ -1,5 +1,7 @@
 package com.gupaoedu;
 
+import com.gupaoedu.vip.spring.demo.action.MyAction;
+import com.gupaoedu.vip.spring.demo.service.impl.QueryService;
 import com.gupaoedu.vip.spring.formework.context.GPApplicationContext;
 
 /**
@@ -12,7 +14,7 @@ public class Test {
     public static void main(String[] args) {
         GPApplicationContext context = new GPApplicationContext("application.properties");
         try {
-            Object object = context.getBean("MyAction");
+            Object object = context.getBean(QueryService.class);
             System.out.println(object);
         } catch (Exception e) {
             e.printStackTrace();
