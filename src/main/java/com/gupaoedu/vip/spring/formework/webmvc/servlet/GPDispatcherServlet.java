@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -53,11 +54,11 @@ public class GPDispatcherServlet extends HttpServlet {
         }
     }
 
-    private void doDispatch(HttpServletRequest request, HttpServletResponse response) {
+    private void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
         //1、通过从request中拿到URL，去匹配一个HandlerMapping
         GPHandlerMapping handler = getHandler(request);
         if (handler == null) {
-            //new GPModelAndView("404");
+            processDispatchResult(request,response,new GPModelAndView("404"));
             return;
         }
         //2、准备调用前的参数
@@ -70,10 +71,18 @@ public class GPDispatcherServlet extends HttpServlet {
         processDispatchResult(request, response, mv);
     }
 
-    private void processDispatchResult(HttpServletRequest request, HttpServletResponse response, GPModelAndView mv) {
+    private void processDispatchResult(HttpServletRequest request, HttpServletResponse response, GPModelAndView mv) throws Exception {
         //把给我的ModleAndView变成一个HTML、OuputStream、json、freemark、veolcity
         //ContextType
         if(null == mv){return;}
+        //如果ModelAndView不为null，怎么办？
+        if(this.viewResolvers.isEmpty()){return;}
+
+        for(GPViewResolver viewResolver: viewResolvers){
+            GPView view = viewResolver.resolveViewName(mv.getViewName(),null);
+            view.render(mv.getModel(),request,response);
+            return;
+        }
     }
 
     private GPHandlerAdapter getHandlerAdapter(GPHandlerMapping handler) {
