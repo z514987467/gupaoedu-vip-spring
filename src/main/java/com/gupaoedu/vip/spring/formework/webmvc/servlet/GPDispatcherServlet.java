@@ -12,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -39,7 +38,7 @@ public class GPDispatcherServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doGet(req, resp);
+        this.doPost(req,resp);
     }
 
     @Override
@@ -211,7 +210,7 @@ public class GPDispatcherServlet extends HttpServlet {
                     //  /demo/query
 
                     //  (//demo//query)
-                    String regex = ("/" + baseUrl + "/" + requestMapping.value().replace("\\*", ".*")).replace("/+", "/");
+                    String regex = ("/" + baseUrl + "/" + requestMapping.value().replaceAll("\\*",".*")).replaceAll("/+", "/");
                     Pattern pattern = Pattern.compile(regex);
                     this.handlerMappings.add(new GPHandlerMapping(pattern, controller, method));
                     log.info("Mapped " + regex + "," + method);
