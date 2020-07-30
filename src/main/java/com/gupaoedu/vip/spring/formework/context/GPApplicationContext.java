@@ -3,6 +3,8 @@ package com.gupaoedu.vip.spring.formework.context;
 import com.gupaoedu.vip.spring.formework.annotation.GPAutowired;
 import com.gupaoedu.vip.spring.formework.annotation.GPController;
 import com.gupaoedu.vip.spring.formework.annotation.GPService;
+import com.gupaoedu.vip.spring.formework.aop.GPAopProxy;
+import com.gupaoedu.vip.spring.formework.aop.support.GPAdvisedSupport;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanFactory;
 import com.gupaoedu.vip.spring.formework.beans.GPBeanWrapper;
 import com.gupaoedu.vip.spring.formework.beans.config.GPBeanDefinition;
@@ -128,6 +130,15 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
             } else {
                 Class<?> clazz = Class.forName(className);
                 instance = clazz.newInstance();
+
+                GPAdvisedSupport config = instantionAopConfig(gpBeanDefinition);
+                config.setTargetClass(clazz);
+                config.setTarget(instance);
+
+                if(config.pointCutMatch()){
+                    instance = createProxy(config).getProxy();
+                }
+
                 this.factoryBeanObjectCache.put(className, instance);
                 this.factoryBeanObjectCache.put(gpBeanDefinition.getFactoryBeanName(), instance);
             }
@@ -138,9 +149,17 @@ public class GPApplicationContext extends GPDefaultListableBeanFactory implement
 
         //3、把这个对象封装到beanWrapper中
         GPBeanWrapper beanWrapper = new GPBeanWrapper(instance);
-
+        
         //4、把beanWrapper存到IOC容器中
         return beanWrapper;
+    }
+
+    private GPAopProxy createProxy(GPAdvisedSupport config) {
+        return null;
+    }
+
+    private GPAdvisedSupport instantionAopConfig(GPBeanDefinition gpBeanDefinition) {
+        return null;
     }
 
     private void populateBean(String beanName, GPBeanDefinition gpBeanDefinition, GPBeanWrapper gpBeanWrapper) {
