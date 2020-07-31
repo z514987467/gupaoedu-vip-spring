@@ -1,5 +1,7 @@
 package com.gupaoedu.vip.spring.formework.aop;
 
+import com.gupaoedu.vip.spring.formework.aop.support.GPAdvisedSupport;
+
 /**
  * @program: gupaoedu-vip-spring
  * @description:
@@ -7,6 +9,10 @@ package com.gupaoedu.vip.spring.formework.aop;
  * @create: 2020-07-29 22:00
  **/
 public class GPCglibAopProxy implements GPAopProxy{
+
+    public GPCglibAopProxy(GPAdvisedSupport config) {
+    }
+
     @Override
     public Object getProxy() {
         return null;
