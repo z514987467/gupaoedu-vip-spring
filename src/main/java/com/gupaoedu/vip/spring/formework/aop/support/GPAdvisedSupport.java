@@ -51,7 +51,7 @@ public class GPAdvisedSupport {
         //TODO 不是太明白
         if (cached == null) {
             Method m = targetClass.getMethod(method.getName(), method.getParameterTypes());
-            //cached = methodCache.get(m);
+            cached = methodCache.get(m);
             //底层逻辑，对代理方法进行一个兼容处理
             this.methodCache.put(m, cached);
         }
@@ -83,7 +83,7 @@ public class GPAdvisedSupport {
             Class aspectClass = Class.forName(this.config.getAspectClass());
             Map<String, Method> aspectMethods = new HashMap<>();
 
-            for (Method m : this.targetClass.getMethods()) {
+            for (Method m : aspectClass.getMethods()) {
                 aspectMethods.put(m.getName(), m);
             }
 

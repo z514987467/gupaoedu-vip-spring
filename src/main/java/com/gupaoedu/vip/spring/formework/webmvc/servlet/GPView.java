@@ -32,7 +32,7 @@ public class GPView {
 
         String line = null;
         while (null != (line = ra.readLine())) {
-            line = new String(line.getBytes("IOS-8859-1"), "UTF-8");
+            line = new String(line.getBytes("ISO-8859-1"),"utf-8");
             Pattern pattern = Pattern.compile("￥\\{[^\\}]+\\}",Pattern.CASE_INSENSITIVE);
             Matcher matcher = pattern.matcher(line);
             while (matcher.find()){
