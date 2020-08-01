@@ -38,4 +38,8 @@ public class LogAspect {
                 "\nArgs:" + Arrays.toString(joinPoint.getArguments()) +
                 "\nThrows:" + ex.getMessage());
     }
+
+    public void around(){
+
+    }
 }
